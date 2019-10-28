@@ -1,0 +1,13 @@
+{
+  "raw_data_path": "./raw_data/",
+  "dataset_path": "./dataset/",
+  "models_path": "./models/",
+
+  "lang1": "eng",
+  "lang2": "fra",
+  "max_len": 10,
+  "model_cfg": {
+    "lr": 1e-2,
+    "hidden_size": 256
+  }
+}
