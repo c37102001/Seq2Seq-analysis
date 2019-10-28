@@ -7,33 +7,32 @@ import torch.nn as nn
 from torch import optim
 from tqdm import tqdm
 import ipdb
-from utils import tensorFromSentence
 from metrics import Accuracy
 from torch.optim.lr_scheduler import StepLR
 
 
 class Trainer:
-    def __init__(self, device, encoder, decoder, word2index, lr,
+    def __init__(self, device, encoder, decoder, embedding, lr,
                  teacher_forcing_ratio=0.5, ckpt_path='./'):
 
         self.device = device
         self.encoder = encoder
         self.decoder = decoder
-        self.word2index = word2index
+        self.embedding = embedding
         self.teacher_forcing_ratio = teacher_forcing_ratio
         self.ckpt_path = ckpt_path
 
         self.encoder_optim = optim.SGD(self.encoder.parameters(), lr=lr)
         self.decoder_optim = optim.SGD(self.decoder.parameters(), lr=lr)
-        # self.encoder_scheduler = StepLR(self.encoder_optim, step_size=2, gamma=0.1)
-        # self.decoder_scheduler = StepLR(self.decoder_optim, step_size=2, gamma=0.1)
+        self.encoder_scheduler = StepLR(self.encoder_optim, step_size=5, gamma=0.1)
+        self.decoder_scheduler = StepLR(self.decoder_optim, step_size=5, gamma=0.1)
         self.criterion = nn.NLLLoss()
         self.history = {'train': [], 'valid': []}
 
-        self.SOS_INDEX = word2index['<SOS>']
-        self.EOS_INDEX = word2index['<EOS>']
+        self.SOS_INDEX = self.embedding.word2index('<SOS>')
+        self.EOS_INDEX = self.embedding.word2index('<EOS>')
 
-    def run_epoch(self, epoch, data, training):
+    def run_epoch(self, data, training):
         print('Model will be saved to %s' % self.ckpt_path)
         total_loss = 0
         accuracy = Accuracy()
@@ -45,13 +44,13 @@ class Trainer:
             random.shuffle(data)
         else:
             description = 'Valid'
-        lines = [tensorFromSentence(self.word2index, line, self.device) for line in data]
+        lines = [self.tensorFromSentence(line) for line in data]
 
         bar = tqdm(range(len(lines)), desc=description)
         tqdm.write('[-] Start training!')
         for iter in bar:
-            input_tensor = lines[iter]                 # _(7,1)
-            target_tensor = lines[iter]
+            input_tensor = lines[iter][1:-1]                 # do not input SOS and EOS
+            target_tensor = lines[iter][1:]                  # not include SOS in target
             loss, predict_tensor = self.run_iter(input_tensor, target_tensor)
 
             if training:
@@ -71,8 +70,8 @@ class Trainer:
         else:
             self.history['valid'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(bar)})
 
-        # self.encoder_scheduler.step()
-        # self.decoder_scheduler.step()
+        self.encoder_scheduler.step()
+        self.decoder_scheduler.step()
 
     def run_iter(self, input_tensor, target_tensor):       # (7,1), (7,1)
         loss = 0
@@ -142,3 +141,6 @@ class Trainer:
             for k, v in state.items():
                 if torch.is_tensor(v):
                     state[k] = v.to(device=self.device)
+
+    def tensorFromSentence(self, sentence):
+        return torch.tensor([self.embedding.word2index(word) for word in sentence.split(' ')]).view(-1, 1).to(self.device)
