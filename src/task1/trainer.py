@@ -27,8 +27,8 @@ class Trainer:
         self.ckpt_path = ckpt_path
         self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=lr)
         self.decoder_optim = optim.Adam(self.decoder.parameters(), lr=lr)
-        self.encoder_scheduler = StepLR(self.encoder_optim, step_size=1, gamma=0.2)
-        self.decoder_scheduler = StepLR(self.decoder_optim, step_size=1, gamma=0.2)
+        self.encoder_scheduler = StepLR(self.encoder_optim, step_size=1, gamma=0.8)
+        self.decoder_scheduler = StepLR(self.decoder_optim, step_size=1, gamma=0.8)
         self.criterion = nn.NLLLoss()
         self.history = {'train': [], 'valid': []}
 

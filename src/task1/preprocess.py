@@ -33,7 +33,7 @@ def main(args):
                                  + [word2index['<EOS>']])    # slice off <SOS>
 
     # indexed_sentences = indexed_sentences[: len(indexed_sentences)//10]
-    train_data, valid_data = train_test_split(indexed_sentences, test_size=0.2, random_state=520)
+    train_data, valid_data = train_test_split(indexed_sentences, test_size=0.1, random_state=520)
     train_dataset = VocabDataset(train_data, word2index['<PAD>'])
     valid_dataset = VocabDataset(valid_data, word2index['<PAD>'])
 
