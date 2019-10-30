@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--hidden_size', type=int, default=1024)
-    parser.add_argument('--epochs', type=int, default=5)
+    parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--cuda', type=int, default=0)
     parser.add_argument('--checkpoint_path', type=str, default='../../models/task1/')
     parser.add_argument('--load_models', action='store_true')
@@ -39,7 +39,7 @@ def main(args):
     encoder = EncoderRNN(n_words, hidden_size).to(device)
     decoder = DecoderRNN(hidden_size, n_words).to(device)
 
-    trainer = Trainer(device, encoder, decoder, word2index, batch_size, lr, ckpt_path=checkpoint_path)
+    trainer = Trainer(device, encoder, decoder, word2index, index2word, batch_size, lr, ckpt_path=checkpoint_path)
     if args.load_models:
         trainer.load_models()
 

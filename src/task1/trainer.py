@@ -14,21 +14,21 @@ from torch.utils.data import DataLoader
 
 
 class Trainer:
-    def __init__(self, device, encoder, decoder, word2index, batch_size, lr,
+    def __init__(self, device, encoder, decoder, word2index, index2word, batch_size, lr,
                  teacher_forcing_ratio=0.5, ckpt_path='./'):
 
         self.device = device
         self.encoder = encoder
         self.decoder = decoder
         self.word2index = word2index
+        self.index2word = index2word
         self.batch_size = batch_size
         self.teacher_forcing_ratio = teacher_forcing_ratio
         self.ckpt_path = ckpt_path
-
-        self.encoder_optim = optim.SGD(self.encoder.parameters(), lr=lr)
-        self.decoder_optim = optim.SGD(self.decoder.parameters(), lr=lr)
-        # self.encoder_scheduler = StepLR(self.encoder_optim, step_size=2, gamma=0.1)
-        # self.decoder_scheduler = StepLR(self.decoder_optim, step_size=2, gamma=0.1)
+        self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=lr)
+        self.decoder_optim = optim.Adam(self.decoder.parameters(), lr=lr)
+        self.encoder_scheduler = StepLR(self.encoder_optim, step_size=1, gamma=0.2)
+        self.decoder_scheduler = StepLR(self.decoder_optim, step_size=1, gamma=0.2)
         self.criterion = nn.NLLLoss()
         self.history = {'train': [], 'valid': []}
 
@@ -38,7 +38,7 @@ class Trainer:
     def run_epoch(self, epoch, dataset, training):
         print('Model will be saved to %s' % self.ckpt_path)
         total_loss = 0
-        accuracy = Accuracy()
+        accuracy = Accuracy(self.index2word)
         self.encoder.train(training)
         self.decoder.train(training)
 
@@ -74,8 +74,8 @@ class Trainer:
         else:
             self.history['valid'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(dataloader)})
 
-        # self.encoder_scheduler.step()
-        # self.decoder_scheduler.step()
+        self.encoder_scheduler.step()
+        self.decoder_scheduler.step()
 
     def run_iter(self, input_tensor, target_tensor):       # (batch, max_len)
         loss = 0
@@ -84,35 +84,36 @@ class Trainer:
         self.decoder_optim.zero_grad()
 
         # encoder
-        encoder_hidden = self.encoder.initHidden(self.batch_size).to(self.device)      # (1,1,256)
         input_tensor = input_tensor.transpose(1, 0)         # (max_len, batch)
+        encoder_hidden = self.encoder.initHidden(input_tensor.size(1)).to(self.device)      # (1,1,256)
         for ei in range(input_tensor.size(0)):
             encoder_output, encoder_hidden = self.encoder(input_tensor[ei], encoder_hidden)
             # input_tensor (batch), hidden (1,batch,hidden), output=hidden (1,batch,hidden)
 
         # decoder
-        decoder_input = torch.tensor([[self.SOS_INDEX] * self.batch_size], device=self.device)     # (1, batch)
+        decoder_input = torch.tensor([[self.SOS_INDEX] * input_tensor.size(1)], device=self.device)     # (1, batch)
         decoder_hidden = encoder_hidden     # last encoder_hidden
         use_teacher_forcing = True if random.random() < self.teacher_forcing_ratio else False
-        if use_teacher_forcing and False:
+        if use_teacher_forcing:
+            target_tensor = target_tensor.transpose(1, 0)  # (max_len, batch)
             for di in range(target_tensor.size(0)):
                 decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
-                loss += self.criterion(decoder_output, target_tensor[di])
+                # (1,b,voc_size), (1,b,hidden)
+                loss += self.criterion(decoder_output.squeeze(0), target_tensor[di])  # (b,voc) (b)
 
-                topv, topi = decoder_output.topk(1)  # (1,1), (1,1)
+                topi = decoder_output.topk(1)[1].view(1, target_tensor.size(1))  # (b)
                 predict_tensor = torch.cat((predict_tensor, topi))
-                decoder_input = target_tensor[di]  # Teacher forcing
+                decoder_input = target_tensor[di].unsqueeze(0)  # Teacher forcing
         else:
-
             target_tensor = target_tensor.transpose(1, 0)   # (max_len, batch)
             for di in range(target_tensor.size(0)):
                 decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
                 # (1,b,voc_size), (1,b,hidden)
                 loss += self.criterion(decoder_output.squeeze(0), target_tensor[di])   # (b,voc) (b)
 
-                topi = decoder_output.topk(1)[1].view(1, self.batch_size)  # (b)
+                topi = decoder_output.topk(1)[1].view(1, target_tensor.size(1))  # (b)
                 predict_tensor = torch.cat((predict_tensor, topi))
-                decoder_input = topi.detach()  # detach from history as input (1)
+                decoder_input = topi.detach()  # detach from history as input (1,b)
         return loss, predict_tensor.t()
 
     def save_models(self, epoch):

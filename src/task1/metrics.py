@@ -31,18 +31,21 @@ class Accuracy(Metric):
         >>>         metric(logits,target)
         >>>         print(metric.name(),metric.value())
     '''
-    def __init__(self):
+    def __init__(self, index2word):
         super(Accuracy, self).__init__()
         self.correct = 0
         self.total = 0
         self.reset()
+        self.index2word = index2word
 
     def __call__(self, logits, target):
-        # if self.total % 200 == 0:
+        batch_num = logits.size(0)
+        # if self.total % 1 == 0:
         #     ipdb.set_trace()
-        if torch.equal(logits, target):
-            self.correct += 1
-        self.total += 1
+        for i in range(batch_num):
+            if torch.equal(logits[i], target[i]):
+                self.correct += 1
+        self.total += batch_num
 
     def reset(self):
         self.correct = 0

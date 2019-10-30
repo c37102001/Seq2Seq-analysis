@@ -10,11 +10,11 @@ class EncoderRNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.embedding = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        self.gru = nn.GRU(hidden_size, hidden_size)
 
     def forward(self, input, hidden):                       # (batch), hidden(1,batch,256)
-        embedded = self.embedding(input).unsqueeze(1)       # (batch) -> (batch,256) -> (batch,1,256)
-        output, hidden = self.gru(embedded, hidden)         # output(batch,1,256), hidden(batch,1,256)
+        embedded = self.embedding(input).unsqueeze(0)       # (batch) -> (batch,256) -> (1,batch,256)
+        output, hidden = self.gru(embedded, hidden)         # output(1,batch,256), hidden(1,batch,256)
         return output, hidden
 
     def initHidden(self, batch_size):
