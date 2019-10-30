@@ -1,4 +1,5 @@
 import torch
+import ipdb
 
 class Metric:
     def __init__(self):
@@ -37,6 +38,8 @@ class Accuracy(Metric):
         self.reset()
 
     def __call__(self, logits, target):
+        # if self.total % 200 == 0:
+        #     ipdb.set_trace()
         if torch.equal(logits, target):
             self.correct += 1
         self.total += 1

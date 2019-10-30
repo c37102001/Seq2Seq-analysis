@@ -10,16 +10,18 @@ import ipdb
 from utils import tensorFromSentence
 from metrics import Accuracy
 from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
 
 
 class Trainer:
-    def __init__(self, device, encoder, decoder, word2index, lr,
+    def __init__(self, device, encoder, decoder, word2index, batch_size, lr,
                  teacher_forcing_ratio=0.5, ckpt_path='./'):
 
         self.device = device
         self.encoder = encoder
         self.decoder = decoder
         self.word2index = word2index
+        self.batch_size = batch_size
         self.teacher_forcing_ratio = teacher_forcing_ratio
         self.ckpt_path = ckpt_path
 
@@ -33,25 +35,26 @@ class Trainer:
         self.SOS_INDEX = word2index['<SOS>']
         self.EOS_INDEX = word2index['<EOS>']
 
-    def run_epoch(self, epoch, data, training):
+    def run_epoch(self, epoch, dataset, training):
         print('Model will be saved to %s' % self.ckpt_path)
         total_loss = 0
         accuracy = Accuracy()
-
         self.encoder.train(training)
         self.decoder.train(training)
-        if training:
-            description = 'Train'
-            random.shuffle(data)
-        else:
-            description = 'Valid'
-        lines = [tensorFromSentence(self.word2index, line, self.device) for line in data]
 
-        bar = tqdm(range(len(lines)), desc=description)
-        tqdm.write('[-] Start training!')
-        for iter in bar:
-            input_tensor = lines[iter]                 # _(7,1)
-            target_tensor = lines[iter]
+        dataloader = DataLoader(
+            dataset=dataset,
+            batch_size=self.batch_size,
+            collate_fn=dataset.collate_fn,
+            shuffle=training
+        )
+
+        description = 'Train' if training else 'Valid'
+
+        trange = tqdm(enumerate(dataloader), total=len(dataloader), desc=description)
+        for i, batch in trange:     # (batch, max_len)
+            input_tensor = batch.to(self.device)
+            target_tensor = batch.to(self.device)
             loss, predict_tensor = self.run_iter(input_tensor, target_tensor)
 
             if training:
@@ -62,34 +65,36 @@ class Trainer:
             accuracy(predict_tensor, target_tensor)
             loss = loss.item() / target_tensor.size(0)
             total_loss += loss
-            bar.set_postfix(avg_loss=total_loss / (iter+1),
-                            score='%d/%d' % (accuracy.correct, accuracy.total),
-                            accuracy="%.2f" % accuracy.value())
+            trange.set_postfix(avg_loss=total_loss / (i+1),
+                               score='%d/%d' % (accuracy.correct, accuracy.total),
+                               accuracy="%.2f" % accuracy.value())
 
         if training:
-            self.history['train'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(bar)})
+            self.history['train'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(dataloader)})
         else:
-            self.history['valid'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(bar)})
+            self.history['valid'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(dataloader)})
 
         # self.encoder_scheduler.step()
         # self.decoder_scheduler.step()
 
-    def run_iter(self, input_tensor, target_tensor):       # (7,1), (7,1)
+    def run_iter(self, input_tensor, target_tensor):       # (batch, max_len)
         loss = 0
         predict_tensor = torch.LongTensor().to(self.device)
         self.encoder_optim.zero_grad()
         self.decoder_optim.zero_grad()
 
         # encoder
-        encoder_hidden = self.encoder.initHidden().to(self.device)      # (1,1,256)
+        encoder_hidden = self.encoder.initHidden(self.batch_size).to(self.device)      # (1,1,256)
+        input_tensor = input_tensor.transpose(1, 0)         # (max_len, batch)
         for ei in range(input_tensor.size(0)):
-            encoder_output, encoder_hidden = self.encoder(input_tensor[ei], encoder_hidden)  # o(1,1,256), h(1,1,256)
+            encoder_output, encoder_hidden = self.encoder(input_tensor[ei], encoder_hidden)
+            # input_tensor (batch), hidden (1,batch,hidden), output=hidden (1,batch,hidden)
 
         # decoder
-        decoder_input = torch.tensor([[self.SOS_INDEX]], device=self.device)     # (1,1)
+        decoder_input = torch.tensor([[self.SOS_INDEX] * self.batch_size], device=self.device)     # (1, batch)
         decoder_hidden = encoder_hidden     # last encoder_hidden
         use_teacher_forcing = True if random.random() < self.teacher_forcing_ratio else False
-        if use_teacher_forcing:
+        if use_teacher_forcing and False:
             for di in range(target_tensor.size(0)):
                 decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
                 loss += self.criterion(decoder_output, target_tensor[di])
@@ -98,17 +103,17 @@ class Trainer:
                 predict_tensor = torch.cat((predict_tensor, topi))
                 decoder_input = target_tensor[di]  # Teacher forcing
         else:
+
+            target_tensor = target_tensor.transpose(1, 0)   # (max_len, batch)
             for di in range(target_tensor.size(0)):
-                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)  # (1,1), (1,1,256)
-                loss += self.criterion(decoder_output, target_tensor[di])
+                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
+                # (1,b,voc_size), (1,b,hidden)
+                loss += self.criterion(decoder_output.squeeze(0), target_tensor[di])   # (b,voc) (b)
 
-                topv, topi = decoder_output.topk(1)  # (1,1), (1,1)
+                topi = decoder_output.topk(1)[1].view(1, self.batch_size)  # (b)
                 predict_tensor = torch.cat((predict_tensor, topi))
-                decoder_input = topi.squeeze().detach()  # detach from history as input (1)
-
-                if decoder_input.item() == self.EOS_INDEX:
-                    break
-        return loss, predict_tensor
+                decoder_input = topi.detach()  # detach from history as input (1)
+        return loss, predict_tensor.t()
 
     def save_models(self, epoch):
         if not os.path.exists(self.ckpt_path):
