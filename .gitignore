@@ -1,2 +1,5 @@
 data/task1/train.txt
 data/task2/hw2.1_corpus.txt
+src/task1/eval/test_data.txt
+data/task2/hw2.1-1_testing_data.txt
+data/task2/hw2.1-2_testing_data.txt

@@ -5,6 +5,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="SDML" />
+    <orderEntry type="module" module-name="SDML" />
   </component>
   <component name="TestRunnerService">
     <option name="projectConfiguration" value="pytest" />
