@@ -7,7 +7,6 @@ import torch.nn as nn
 from torch import optim
 from tqdm import tqdm
 import ipdb
-from utils import tensorFromSentence
 from metrics import Accuracy
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
@@ -26,9 +25,9 @@ class Trainer:
         self.ckpt_path = ckpt_path
         self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=lr)
         self.decoder_optim = optim.Adam(self.decoder.parameters(), lr=lr)
-        self.encoder_scheduler = StepLR(self.encoder_optim, step_size=5, gamma=0.5)
-        self.decoder_scheduler = StepLR(self.decoder_optim, step_size=5, gamma=0.5)
-        self.criterion = nn.NLLLoss()
+        self.encoder_scheduler = StepLR(self.encoder_optim, step_size=30, gamma=0.5)
+        self.decoder_scheduler = StepLR(self.decoder_optim, step_size=30, gamma=0.5)
+        self.criterion = nn.CrossEntropyLoss(ignore_index=word2index['<PAD>'])
         self.history = {'train': [], 'valid': []}
 
         self.SOS_INDEX = word2index['<SOS>']
@@ -46,7 +45,8 @@ class Trainer:
             dataset=dataset,
             batch_size=self.batch_size,
             collate_fn=dataset.collate_fn,
-            shuffle=training
+            shuffle=training,
+            num_workers=4
         )
 
         description = 'Train' if training else 'Valid'
@@ -69,7 +69,7 @@ class Trainer:
                                score='%d/%d' % (accuracy.correct, accuracy.total),
                                accuracy="%.2f" % accuracy.value())
 
-        print('accuracy: %.2f' % accuracy.value())
+        print('accuracy: %.2f, score: %d/%d' % (accuracy.value(), accuracy.correct, accuracy.total))
         if training:
             self.history['train'].append({'accuracy': accuracy.value(), 'loss': total_loss / len(dataloader)})
         else:
@@ -89,7 +89,6 @@ class Trainer:
         encoder_hidden = self.encoder.initHidden(input_tensor.size(1)).to(self.device)      # (1,1,256)
         for ei in range(input_tensor.size(0)):
             encoder_output, encoder_hidden = self.encoder(input_tensor[ei], encoder_hidden)
-            # input_tensor (batch), hidden (1,batch,hidden), output=hidden (1,batch,hidden)
 
         # decoder
         decoder_input = torch.tensor([[self.SOS_INDEX] * input_tensor.size(1)], device=self.device)     # (1, batch)

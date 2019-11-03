@@ -1,41 +1,59 @@
 import argparse
 import pickle
-import ipdb
 import os
-from dataset import VocabDataset
+import random
+from dataset import PairDataset
 from sklearn.model_selection import train_test_split
+from ipdb import set_trace as pdb
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--raw_data_path', type=str, default='../../data/task1/train.txt')
-    parser.add_argument('--dataset_path', type=str, default='../../dataset/task1/')
+    parser.add_argument('--raw_data_path', type=str, default='../../data/task2/hw2.1_corpus.txt')
+    parser.add_argument('--dataset_path', type=str, default='../../dataset/task2/')
     args = parser.parse_args()
     return args
 
 
 def main(args):
+
+    # make dictionary
+    sentences = open(args.raw_data_path, encoding='utf-8').read().strip().split('\n')
+    del sentences[10148]    # error data
+    max_len = max([len(s) for s in sentences])
+
     word2index = {'<PAD>': 0, '<SOS>': 1, '<EOS>': 2, '<UNK>': 3}
     index2word = {0: '<PAD>', 1: '<SOS>', 2: '<EOS>', 3: '<UNK>'}
 
-    sentences = open(args.raw_data_path, encoding='utf-8').read().strip().split('\n')
+    for num in range(1, max_len + 1):
+        index2word[len(word2index)] = num
+        word2index[num] = len(word2index)
 
     for sentence in sentences:
-        for word in sentence.split(' ')[1:-1]:
-            word = word.lower()
+        for word in sentence:
             if word not in word2index:
                 index2word[len(word2index)] = word
                 word2index[word] = len(word2index)
 
-    indexed_sentences = []
-    for sentence in sentences:
-        indexed_sentences.append(
-            [word2index[word.lower()] for word in sentence.split(' ')[1:-1]] + [word2index['<EOS>']])
+    # preprocess data
+    processed = []
+    for i in range(len(sentences) - 1):
+        s1 = [w for w in sentences[i]]
+        s2 = [w for w in sentences[i + 1]]
 
-    # indexed_sentences = indexed_sentences[: len(indexed_sentences)//10]
-    train_data, valid_data = train_test_split(indexed_sentences, test_size=0.1, random_state=520)
-    train_dataset = VocabDataset(train_data, word2index['<PAD>'])
-    valid_dataset = VocabDataset(valid_data, word2index['<PAD>'])
+        s2_idx = random.sample(range(len(s2)), k=1)[0]
+        s2_word = s2[s2_idx]
+        s1 += ['<EOS>', s2_idx+1, s2_word]
+
+        processed.append({
+            'sentence': [word2index['<SOS>']] + [word2index[w] for w in s1],
+            'label': [word2index[w] for w in s2] + [word2index['<EOS>']]
+        })
+
+    # make dataset
+    train_data, valid_data = train_test_split(processed, test_size=0.1, random_state=520)
+    train_dataset = PairDataset(train_data, word2index['<PAD>'])
+    valid_dataset = PairDataset(valid_data, word2index['<PAD>'])
 
     train_dataset_path = os.path.join(args.dataset_path, 'train_dataset.pkl')
     valid_dataset_path = os.path.join(args.dataset_path, 'valid_dataset.pkl')

@@ -11,15 +11,14 @@ from utils import load_pkl
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--arch', type=str, required=True)
-    parser.add_argument('--raw_data_path', type=str, default='../../data/task1/train.txt')
-    parser.add_argument('--dataset_path', type=str, default='../../dataset/task1/')
+    parser.add_argument('--dataset_path', type=str, default='../../dataset/task2/')
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--embedding_size', type=int, default=512)
     parser.add_argument('--hidden_size', type=int, default=128)
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--cuda', type=int, default=0)
-    parser.add_argument('--checkpoint_path', type=str, default='../../models/task1/')
+    parser.add_argument('--checkpoint_path', type=str, default='../../models/task2/')
     parser.add_argument('--load_models', action='store_true')
     args = parser.parse_args()
     return args

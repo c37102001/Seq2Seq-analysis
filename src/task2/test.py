@@ -1,6 +1,10 @@
-from ipdb import set_trace as pdb
+# from ipdb import set_trace as pdb
 
-lines = open('../../data/task2/hw2.1_corpus.txt', encoding='utf-8').read().rstrip().split('\n')
-pdb()
+import random
+
+s2 = [3, 51, 1002, 7, 234]
 
 
+s2_idx = random.sample(range(len(s2)), k=1)[0]
+
+print(s2[s2_idx])

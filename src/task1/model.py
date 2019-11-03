@@ -10,12 +10,10 @@ class EncoderRNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.embedding = nn.Embedding(vocab_size, embedding_size)
-        self.linear = nn.Linear(embedding_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.gru = nn.GRU(embedding_size, hidden_size)
 
     def forward(self, input, hidden):                       # (batch), hidden(1,batch,256)
         embedded = self.embedding(input).unsqueeze(0)       # (b) -> (b,e) -> (1,b,e)
-        embedded = self.linear(embedded)                    # (1,b,e) -> (1,b,h)
         output, hidden = self.gru(embedded, hidden)         # output(1,b,h), hidden(1,b,h)
         return output, hidden
 
@@ -29,17 +27,14 @@ class DecoderRNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.embedding = nn.Embedding(vocab_size, embedding_size)
-        self.linear = nn.Linear(embedding_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.gru = nn.GRU(embedding_size, hidden_size)
         self.out = nn.Linear(hidden_size, vocab_size)
-        self.softmax = nn.LogSoftmax(dim=2)
 
     def forward(self, input, hidden):                       # input(1,b), hidden(1,b,h)
         output = self.embedding(input)                      # (1,b,e)
-        output = self.linear(output)                        # (1,b,h)
         output = F.relu(output)
         output, hidden = self.gru(output, hidden)           # (1,b,h), (1,b,h)
-        output = self.softmax(self.out(output))             # (1, b, voc_size)
+        output = self.out(output)                           # (1, b, voc_size)
         return output, hidden                               # (1, b, voc_size), (1,b,h)
 
     def initHidden(self, batch_size):
