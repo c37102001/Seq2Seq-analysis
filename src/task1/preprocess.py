@@ -30,7 +30,10 @@ def main(args):
     indexed_sentences = []
     for sentence in sentences:
         indexed_sentences.append(
-            [word2index[word.lower()] for word in sentence.split(' ')[1:-1]] + [word2index['<EOS>']])
+            [word2index['<SOS>']] +
+            [word2index[word.lower()] for word in sentence.split(' ')[1:-1]] +
+            [word2index['<EOS>']]
+        )
 
     # indexed_sentences = indexed_sentences[: len(indexed_sentences)//10]
     train_data, valid_data = train_test_split(indexed_sentences, test_size=0.1, random_state=520)
