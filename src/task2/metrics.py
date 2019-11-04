@@ -38,15 +38,9 @@ class Accuracy(Metric):
         self.reset()
         self.index2word = index2word
 
-    def __call__(self, logits, target):     # (batch, max_len-1)
-        batch_num = logits.size(0)
-        # if self.total % 300000 == 0:
-        #     pdb()
-        for i in range(batch_num):
-            pad_idx = (target[i] == 0).nonzero()[0].item() if 0 in target[i] else len(target[i])
-            if torch.equal(logits[i][:pad_idx], target[i][:pad_idx]):
-                self.correct += 1
-        self.total += batch_num
+    def __call__(self, logits, target):     # (batch)
+        self.correct += torch.sum(logits == target).item()
+        self.total += logits.shape[0]
 
     def reset(self):
         self.correct = 0

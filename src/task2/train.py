@@ -6,6 +6,7 @@ import torch
 from model import Seq2Seq
 from trainer import Trainer
 from utils import load_pkl
+torch.manual_seed(42)
 
 
 def parse_args():
@@ -18,6 +19,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--epochs', type=int, default=150)
     parser.add_argument('--cuda', type=int, default=0)
+    parser.add_argument('--output_path', type=str, default='test.txt')
     parser.add_argument('--checkpoint_path', type=str, default='../../models/task2/')
     parser.add_argument('--load_models', action='store_true')
     args = parser.parse_args()
@@ -40,7 +42,8 @@ def main(args):
 
     model = Seq2Seq(vocab_size, embedding_size, hidden_size, device).to(device)
 
-    trainer = Trainer(device, model, word2index, index2word, batch_size, lr, ckpt_path=checkpoint_path)
+    trainer = Trainer(device, model, word2index, index2word, batch_size, lr, ckpt_path=checkpoint_path,
+                      output_path=args.output_path)
     if args.load_models:
         trainer.load_models()
 
@@ -48,7 +51,7 @@ def main(args):
         print('Epoch: {}'.format(epoch))
         trainer.run_epoch(epoch, train_dataset, True)
         trainer.run_epoch(epoch, valid_dataset, False)
-        trainer.save_models(epoch)
+        # trainer.save_models(epoch)
 
     ipdb.set_trace()
 

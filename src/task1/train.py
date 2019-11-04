@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument('--dataset_path', type=str, default='../../dataset/task1/')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--embedding_size', type=int, default=512)
-    parser.add_argument('--hidden_size', type=int, default=256)
+    parser.add_argument('--hidden_size', type=int, default=128)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--epochs', type=int, default=150)
     parser.add_argument('--cuda', type=int, default=0)

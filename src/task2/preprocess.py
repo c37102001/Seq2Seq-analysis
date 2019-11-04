@@ -47,7 +47,9 @@ def main(args):
 
         processed.append({
             'sentence': [word2index[w] for w in s1],
-            'label': [word2index['<SOS>']] + [word2index[w] for w in s2] + [word2index['<EOS>']]
+            'sentence_label': [word2index['<SOS>']] + [word2index[w] for w in s2] + [word2index['<EOS>']],
+            'control_idx': s1[-2],
+            'control_label': word2index[s1[-1]]
         })
 
     # make dataset

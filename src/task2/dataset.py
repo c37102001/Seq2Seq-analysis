@@ -8,7 +8,9 @@ class PairDataset(Dataset):
     data (list of dictionary):
     {
         'sentence': [1, 90, 1081, 242, 1151, 1597, 1112, 140, 2, 4, 321]
-        'label': [321, 2]
+        'sentence_label': [321, 2]
+        'control_idx': [4]
+        'control_label': [321]
     }
     """
 
@@ -25,12 +27,15 @@ class PairDataset(Dataset):
     def collate_fn(self, datas):
 
         sentences = [data['sentence'] for data in datas]
-        labels = [data['label'] for data in datas]
+        sentence_label = [data['sentence_label'] for data in datas]
+        ctrl_indices = [data['control_idx'] for data in datas]
+        ctrl_labels = [data['control_label'] for data in datas]
 
         max_sent_len = max([len(s) for s in sentences])
-        max_label_len = max([len(l) for l in labels])
+        max_label_len = max([len(l) for l in sentence_label])
 
         padded_sents = [sent + [self.pad_index] * (max_sent_len - len(sent)) for sent in sentences]
-        padded_labels = [label + [self.pad_index] * (max_label_len - len(label)) for label in labels]
+        padded_labels = [label + [self.pad_index] * (max_label_len - len(label)) for label in sentence_label]
 
-        return torch.LongTensor(padded_sents), torch.LongTensor(padded_labels)
+        return torch.LongTensor(padded_sents), torch.LongTensor(padded_labels), \
+               ctrl_indices, torch.LongTensor(ctrl_labels)

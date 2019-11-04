@@ -1,10 +1,12 @@
-# from ipdb import set_trace as pdb
-
+from ipdb import set_trace as pdb
+import torch
 import random
 
-s2 = [3, 51, 1002, 7, 234]
+x = torch.randn(4, 3, 2)
+print('x: ', x)
+ctrl = [1, 0, 2, 1]
+print('ctrl: ', ctrl)
 
+y = torch.stack([x[(i, ctrl[i])] for i in range(len(ctrl))])
 
-s2_idx = random.sample(range(len(s2)), k=1)[0]
-
-print(s2[s2_idx])
+pdb()
