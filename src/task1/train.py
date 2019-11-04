@@ -1,11 +1,11 @@
 import argparse
-import pickle
 import os
 import ipdb
 import torch
 from model import Seq2Seq
 from trainer import Trainer
 from utils import load_pkl
+torch.manual_seed(42)
 
 
 def parse_args():
@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument('--dataset_path', type=str, default='../../dataset/task1/')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--embedding_size', type=int, default=512)
-    parser.add_argument('--hidden_size', type=int, default=128)
+    parser.add_argument('--hidden_size', type=int, default=256)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--epochs', type=int, default=150)
     parser.add_argument('--cuda', type=int, default=0)
@@ -32,6 +32,7 @@ def main(args):
     index2word = load_pkl(os.path.join(args.dataset_path, 'index2word.pkl'))
 
     vocab_size = len(word2index)
+    print('vocab_size: ', vocab_size)
     batch_size = args.batch_size
     embedding_size = args.embedding_size
     hidden_size = args.hidden_size
@@ -50,8 +51,6 @@ def main(args):
         trainer.run_epoch(epoch, train_dataset, True)
         trainer.run_epoch(epoch, valid_dataset, False)
         trainer.save_models(epoch)
-
-    ipdb.set_trace()
 
 
 if __name__ == '__main__':

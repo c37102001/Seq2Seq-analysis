@@ -5,8 +5,9 @@ from torch.utils.data import Dataset
 class VocabDataset(Dataset):
     """
     Args:
-    data (list): size:(382785, various)
-        [[1, 35, 6, 2], [1, 35, 6, 1577, 230, ..., 2], ...]
+    data (list of dict):
+        data['indexed_sentence']: [1, 35, 6, 51, 2]
+        data['label']: ['<SOS>', 'tom', 'seemed', 'annoyed', '<EOS>']
     """
     def __init__(self, data, pad_index):
         self.data = data
@@ -20,8 +21,12 @@ class VocabDataset(Dataset):
 
     def collate_fn(self, datas):
 
-        max_len = max([len(data) for data in datas])
+        sents = [data['indexed_sentence'] for data in datas]
+        labels = [data['label'] for data in datas]
 
-        batch = [data + [self.pad_index] * (max_len - len(data)) for data in datas]     # (batch, max_len)
-        batch = torch.LongTensor(batch)                                                 # (batch, max_len)
-        return batch
+        sents_max_len = max([len(sent) for sent in sents])
+        labels_max_len = sents_max_len - 1
+
+        batch_sents = [sent + [self.pad_index] * (sents_max_len - len(sent)) for sent in sents]     # (batch, max_len)
+        batch_words_gt = [label + ['<PAD>'] * (labels_max_len - len(label)) for label in labels]      # (batch, max_len)
+        return torch.LongTensor(batch_sents), batch_words_gt

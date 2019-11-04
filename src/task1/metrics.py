@@ -43,8 +43,8 @@ class Accuracy(Metric):
         # if self.total % 300000 == 0:
         #     pdb()
         for i in range(batch_num):
-            pad_idx = (target[i] == 0).nonzero()[0].item() if 0 in target[i] else len(target[i])
-            if torch.equal(logits[i][:pad_idx], target[i][:pad_idx]):
+            pad_idx = target[i].index('<PAD>') if '<PAD>' in target[i] else len(target[i])
+            if self.indices_to_sentence(logits[i][:pad_idx]) == target[i][:pad_idx]:
                 self.correct += 1
         self.total += batch_num
 
@@ -57,3 +57,6 @@ class Accuracy(Metric):
 
     def name(self):
         return 'accuracy'
+
+    def indices_to_sentence(self, indices):
+        return [self.index2word[index.item()] for index in indices]

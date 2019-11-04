@@ -1,5 +1,5 @@
 import torch
-import ipdb
+from ipdb import set_trace as pdb
 
 class Metric:
     def __init__(self):
@@ -38,10 +38,10 @@ class Accuracy(Metric):
         self.reset()
         self.index2word = index2word
 
-    def __call__(self, logits, target):
+    def __call__(self, logits, target):     # (batch, max_len-1)
         batch_num = logits.size(0)
         # if self.total % 300000 == 0:
-        #     ipdb.set_trace()
+        #     pdb()
         for i in range(batch_num):
             pad_idx = (target[i] == 0).nonzero()[0].item() if 0 in target[i] else len(target[i])
             if torch.equal(logits[i][:pad_idx], target[i][:pad_idx]):

@@ -43,11 +43,11 @@ def main(args):
 
         s2_idx = random.sample(range(len(s2)), k=1)[0]
         s2_word = s2[s2_idx]
-        s1 += ['<EOS>', s2_idx+1, s2_word]
+        s1 = ['<SOS>'] + s1 + ['<EOS>', s2_idx+1, s2_word]
 
         processed.append({
-            'sentence': [word2index['<SOS>']] + [word2index[w] for w in s1],
-            'label': [word2index[w] for w in s2] + [word2index['<EOS>']]
+            'sentence': [word2index[w] for w in s1],
+            'label': [word2index['<SOS>']] + [word2index[w] for w in s2] + [word2index['<EOS>']]
         })
 
     # make dataset
