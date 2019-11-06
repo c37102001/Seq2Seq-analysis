@@ -40,8 +40,6 @@ class Accuracy(Metric):
 
     def __call__(self, logits, target):     # (batch, max_len-1)
         batch_num = logits.size(0)
-        # if self.total % 300000 == 0:
-        #     pdb()
         for i in range(batch_num):
             pad_idx = target[i].index('<PAD>') if '<PAD>' in target[i] else len(target[i])
             if self.indices_to_sentence(logits[i][:pad_idx]) == target[i][:pad_idx]:

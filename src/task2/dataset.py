@@ -1,41 +1,56 @@
 import torch
 from torch.utils.data import Dataset
+import random
 
 
 class PairDataset(Dataset):
     """
     Args:
-    data (list of dictionary):
-    {
-        'sentence': [1, 90, 1081, 242, 1151, 1597, 1112, 140, 2, 4, 321]
-        'sentence_label': [321, 2]
-        'control_idx': [4]
-        'control_label': [321]
-    }
+        data: list of indexed sentence: [1, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 2]
+        label: list of indexed next_sentence: [1, 41, 42, 31, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 2]
     """
 
-    def __init__(self, data, pad_index):
+    def __init__(self, data, label, pad_index, n_ctrl, max_len, testing=False):
         self.data = data
+        self.label = label
         self.pad_index = pad_index
+        self.n_ctrl = n_ctrl
+        self.max_len = max_len + 2 + 2 * n_ctrl
+        self.testing = testing
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        return self.data[index]
+        return self.data[index], self.label[index]
 
     def collate_fn(self, datas):
 
-        sentences = [data['sentence'] for data in datas]
-        sentence_label = [data['sentence_label'] for data in datas]
-        ctrl_indices = [data['control_idx'] for data in datas]
-        ctrl_labels = [data['control_label'] for data in datas]
+        batch_index = []
+        batch_label = []
+        batch_samples = []
 
-        max_sent_len = max([len(s) for s in sentences])
-        max_label_len = max([len(l) for l in sentence_label])
+        for data in datas:
+            index = data[0]
+            label = data[1]
 
-        padded_sents = [sent + [self.pad_index] * (max_sent_len - len(sent)) for sent in sentences]
-        padded_labels = [label + [self.pad_index] * (max_label_len - len(label)) for label in sentence_label]
+            samples = self.get_n_ctrl_idx(self.n_ctrl, len(label)-2)
+            index = self.add_control(index, label, samples)
+            batch_index.append(index + [self.pad_index] * (self.max_len - len(index)))
+            batch_label.append(label + [self.pad_index] * (self.max_len - len(label)))
+            batch_samples.append(samples)
 
-        return torch.LongTensor(padded_sents), torch.LongTensor(padded_labels), \
-               ctrl_indices, torch.LongTensor(ctrl_labels)
+        return torch.LongTensor(batch_index), torch.LongTensor(batch_label), batch_samples
+
+    def get_n_ctrl_idx(self, ncontrols, sent_len):
+        sample_num = random.randint(1, ncontrols)
+        if sent_len < sample_num:
+            sample_num = sent_len
+        samples = random.sample([i for i in range(1, sent_len + 1)], sample_num)
+        samples.sort()
+        return samples
+
+    def add_control(self, index, label, samples):
+        for sample in samples:
+            index = index + [sample] + [label[sample]]      # TODO modify sample into word_dict[sample]
+        return index

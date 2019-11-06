@@ -51,7 +51,7 @@ def main(args):
         print('Epoch: {}'.format(epoch))
         trainer.run_epoch(epoch, train_dataset, True)
         trainer.run_epoch(epoch, valid_dataset, False)
-        trainer.save_models(epoch)
+        # trainer.save_models(epoch)
 
     ipdb.set_trace()
 

@@ -18,34 +18,21 @@ class Metric:
         raise NotImplementedError
 
 
-class CtrlAccuracy(Metric):
-
+class Accuracy(Metric):
+    '''
+    计算准确度
+    可以使用topK参数设定计算K准确度
+    Examples:
+        >>> metric = Accuracy(**)
+        >>> for epoch in range(epochs):
+        >>>     metric.reset()
+        >>>     for batch in batchs:
+        >>>         logits = model()
+        >>>         metric(logits,target)
+        >>>         print(metric.name(),metric.value())
+    '''
     def __init__(self, index2word):
-        super(CtrlAccuracy, self).__init__()
-        self.correct = 0
-        self.total = 0
-        self.reset()
-        self.index2word = index2word
-
-    def __call__(self, logits, target):     # (batch)
-        self.correct += torch.sum(logits == target).item()
-        self.total += logits.shape[0]
-
-    def reset(self):
-        self.correct = 0
-        self.total = 0
-
-    def value(self):
-        return float(self.correct) / self.total
-
-    def name(self):
-        return 'accuracy'
-
-
-class SentAccuracy(Metric):
-
-    def __init__(self, index2word):
-        super(SentAccuracy, self).__init__()
+        super(Accuracy, self).__init__()
         self.correct = 0
         self.total = 0
         self.reset()
@@ -54,8 +41,8 @@ class SentAccuracy(Metric):
     def __call__(self, logits, target):     # (batch, max_len-1)
         batch_num = logits.size(0)
         for i in range(batch_num):
-            pad_idx = (target[i] == 0).nonzero()[0].item() if 0 in target[i] else len(target[i])
-            if torch.equal(logits[i][:pad_idx], target[i][:pad_idx]):
+            pad_idx = target[i].index('<PAD>') if '<PAD>' in target[i] else len(target[i])
+            if self.indices_to_sentence(logits[i][:pad_idx]) == target[i][:pad_idx]:
                 self.correct += 1
         self.total += batch_num
 
@@ -68,3 +55,6 @@ class SentAccuracy(Metric):
 
     def name(self):
         return 'accuracy'
+
+    def indices_to_sentence(self, indices):
+        return [self.index2word[index.item()] for index in indices]
