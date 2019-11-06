@@ -26,7 +26,7 @@ class Trainer:
         self.ckpt_path = ckpt_path
         self.output_path = output_path
         self.opt = optim.Adam(self.model.parameters(), lr=lr)
-        self.scheduler = StepLR(self.opt, step_size=20, gamma=0.5)
+        self.scheduler = StepLR(self.opt, step_size=5, gamma=0.5)
         self.criterion = nn.CrossEntropyLoss(ignore_index=word2index['<PAD>'])
         self.accuracy = Accuracy(self.index2word)
         self.history = {'train': [], 'valid': []}
@@ -61,13 +61,10 @@ class Trainer:
                 self.opt.zero_grad()
                 loss.backward()
                 self.opt.step()
-
-            if i % 3000 == 0:
-                sample_batch = random.randint(0, input_tensor.shape[0]-1)
-                with open(self.output_path, 'a+') as f:
-                    f.write(self.indices2sentence(input_tensor[sample_batch]) + '\n')
-                    f.write(self.indices2sentence(target_tensor[sample_batch]) + '\n')
-                    f.write(self.indices2sentence(predict[sample_batch]) + '\n\n')
+            else:
+                with open('%s_%d' % (self.output_path, epoch), 'a+') as f:
+                    for predict_sent in predict:
+                        f.write(self.indices2sentence(predict_sent) + '\n')
 
             loss = loss.item() / target_tensor.size(0)
             total_loss += loss
@@ -112,12 +109,11 @@ class Trainer:
     def save_models(self, epoch):
         print('[-] Saving models to %s' % self.ckpt_path)
 
-        if epoch % 5 == 0:
-            torch.save({
-                'model': self.model.state_dict(),
-                'optim': self.opt.state_dict(),
-                'history': self.history
-            }, self.ckpt_path + 'models_epoch%d.ckpt' % epoch)
+        torch.save({
+            'model': self.model.state_dict(),
+            'optim': self.opt.state_dict(),
+            'history': self.history
+        }, self.ckpt_path + 'models_epoch%d.ckpt' % epoch)
 
         with open(self.ckpt_path + 'history.json', 'w') as f:
             json.dump(self.history, f, indent=4)

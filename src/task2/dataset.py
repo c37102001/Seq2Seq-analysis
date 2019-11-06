@@ -23,22 +23,30 @@ class PairDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        return self.data[index], self.label[index]
+        if not self.testing:
+            return self.data[index], self.label[index]
+        else:
+            return self.data[index]
 
     def collate_fn(self, datas):
 
         batch_index = []
         batch_label = []
         batch_samples = []
-        for (index, label) in datas:
-            samples = self.get_n_ctrl_idx(self.n_ctrl, len(label)-2)
-            for sample in samples:
-                index = index + [self.word_dict[str(sample)]] + [label[sample]]
-            batch_index.append(index + [self.pad_index] * (self.max_len - len(index)))
-            batch_label.append(label + [self.pad_index] * (self.max_len - len(label)))
-            batch_samples.append(samples)
+        if not self.testing:
+            for (index, label) in datas:
+                samples = self.get_n_ctrl_idx(self.n_ctrl, len(label)-2)
+                for sample in samples:
+                    index = index + [self.word_dict[str(sample)]] + [label[sample]]
+                batch_index.append(index + [self.pad_index] * (self.max_len - len(index)))
+                batch_label.append(label + [self.pad_index] * (self.max_len - len(label)))
+                batch_samples.append(samples)
+            return torch.LongTensor(batch_index), torch.LongTensor(batch_label), batch_samples
+        else:
+            for index in datas:
+                batch_index.append(index + [self.pad_index] * (self.max_len - len(index)))
+            return torch.LongTensor(batch_index), torch.LongTensor(batch_index)
 
-        return torch.LongTensor(batch_index), torch.LongTensor(batch_label), batch_samples
 
     def get_n_ctrl_idx(self, ncontrols, sent_len):
         sample_num = min(random.randint(1, ncontrols), sent_len)

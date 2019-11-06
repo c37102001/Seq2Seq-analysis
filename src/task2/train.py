@@ -54,8 +54,6 @@ def main(args):
         trainer.run_epoch(epoch, valid_dataset, False)
         trainer.save_models(epoch)
 
-    ipdb.set_trace()
-
 
 if __name__ == '__main__':
     args = parse_args()
