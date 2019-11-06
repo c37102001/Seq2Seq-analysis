@@ -38,13 +38,12 @@ class Accuracy(Metric):
         self.reset()
         self.index2word = index2word
 
-    def __call__(self, logits, target):     # (batch, max_len-1)
-        batch_num = logits.size(0)
-        for i in range(batch_num):
-            pad_idx = target[i].index('<PAD>') if '<PAD>' in target[i] else len(target[i])
-            if self.indices_to_sentence(logits[i][:pad_idx]) == target[i][:pad_idx]:
-                self.correct += 1
-        self.total += batch_num
+    def __call__(self, predict, target, batch_samples=None):     # (batch, max_len-1)
+        for p, t, samples in zip(predict, target, batch_samples):
+            for sample in samples:
+                self.total += 1
+                if p[sample-1] == t[sample-1]:
+                    self.correct += 1
 
     def reset(self):
         self.correct = 0

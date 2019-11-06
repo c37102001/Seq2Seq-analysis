@@ -12,14 +12,14 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--raw_data_path', type=str, default='../../data/task2/hw2.1_corpus.txt')
     parser.add_argument('--dataset_path', type=str, default='../../dataset/task2/')
-    parser.add_argument('--n_ctrl', type=int, default=1)
+    parser.add_argument('--n_ctrl', type=int, required=True)
     args = parser.parse_args()
     return args
 
 
 def collect_words(dataset, max_len):
-    word_dict = {'<PAD>': 0, '<SOS>': 1, '<EOS>': 2, '<UNK>': 3}
-    index_dict = {0: '<PAD>', 1: '<SOS>', 2: '<EOS>', 3: '<UNK>'}
+    word_dict = {'<PAD>': 0}
+    index_dict = {0: '<PAD>'}
 
     for num in range(1, max_len + 1):
         index_dict[len(word_dict)] = str(num)
@@ -37,7 +37,6 @@ def main(args):
 
     # make dictionary
     data = open(args.raw_data_path, encoding='utf-8').read().strip().split('\n')
-    del data[10148]    # error data
 
     max_len = 25
     n_ctrl = args.n_ctrl
@@ -50,11 +49,11 @@ def main(args):
     index_label = index_dataset[1:]
     train_index, valid_index, train_label, valid_label = \
         train_test_split(index_data, index_label, test_size=0.2, random_state=42)
-    train_data = PairDataset(train_index, train_label, word_dict['<PAD>'], n_ctrl, max_len)
-    valid_data = PairDataset(valid_index, valid_label, word_dict['<PAD>'], n_ctrl, max_len)
+    train_data = PairDataset(train_index, train_label, word_dict, n_ctrl, max_len)
+    valid_data = PairDataset(valid_index, valid_label, word_dict, n_ctrl, max_len)
 
-    train_data_path = os.path.join(args.dataset_path, 'train_dataset.pkl')
-    valid_data_path = os.path.join(args.dataset_path, 'valid_dataset.pkl')
+    train_data_path = os.path.join(args.dataset_path, 'train_dataset_%d.pkl' % n_ctrl)
+    valid_data_path = os.path.join(args.dataset_path, 'valid_dataset_%d.pkl' % n_ctrl)
     word2index_path = os.path.join(args.dataset_path, 'word2index.pkl')
     index2word_path = os.path.join(args.dataset_path, 'index2word.pkl')
 
