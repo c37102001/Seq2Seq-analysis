@@ -3,12 +3,26 @@ import torch.nn as nn
 import torch.nn.functional as F
 import random
 from ipdb import set_trace as pdb
+random.seed(42)
+torch.manual_seed(42)
+
+
+class Embedding(nn.Module):
+    def __init__(self, vocab_size, embedding_size, hidden_size):
+        super(Embedding, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_size)
+        self.linear = nn.Linear(embedding_size, hidden_size)
+
+    def forward(self, input):
+        embedded = self.embedding(input)
+        embedded = F.relu(self.linear(embedded))
+        return embedded
 
 
 class EncoderRNN(nn.Module):
-    def __init__(self, embedding_size, hidden_size):
+    def __init__(self, hidden_size):
         super(EncoderRNN, self).__init__()
-        self.gru = nn.GRU(embedding_size, hidden_size, batch_first=True)
+        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
 
     def forward(self, input):                    # (b,l,e)
         output, hidden = self.gru(input)         # hidden(1,b,h)
@@ -16,10 +30,10 @@ class EncoderRNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, embedding_size, hidden_size, vocab_size):
+    def __init__(self, hidden_size, vocab_size):
         super(DecoderRNN, self).__init__()
         self.vocab_size = vocab_size
-        self.gru = nn.GRU(embedding_size, hidden_size, batch_first=True)
+        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, input, hidden):                       # input(b,1,e), hidden(1,b,h)
@@ -33,9 +47,9 @@ class Seq2Seq(nn.Module):
     def __init__(self, vocab_size, embedding_size, hidden_size, device):
         super(Seq2Seq, self).__init__()
         self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(vocab_size, embedding_size)
-        self.encoder = EncoderRNN(embedding_size, hidden_size)
-        self.decoder = DecoderRNN(embedding_size, hidden_size, vocab_size)
+        self.embedding = Embedding(vocab_size, embedding_size, hidden_size)
+        self.encoder = EncoderRNN(hidden_size)
+        self.decoder = DecoderRNN(hidden_size, vocab_size)
         self.device = device
 
     def forward(self, input_tensor, target_tensor, teacher_forcing_ratio):     # (batch, max_len)

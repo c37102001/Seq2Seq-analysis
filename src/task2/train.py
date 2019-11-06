@@ -15,11 +15,10 @@ def parse_args():
     parser.add_argument('--dataset_path', type=str, default='../../dataset/task2/')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--embedding_size', type=int, default=512)
-    parser.add_argument('--hidden_size', type=int, default=128)
+    parser.add_argument('--hidden_size', type=int, default=256)
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--epochs', type=int, default=150)
+    parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--cuda', type=int, default=0)
-    parser.add_argument('--output_path', type=str, default='test.txt')
     parser.add_argument('--checkpoint_path', type=str, default='../../models/task2/')
     parser.add_argument('--load_models', action='store_true')
     args = parser.parse_args()
@@ -39,11 +38,12 @@ def main(args):
     lr = args.lr
     device = torch.device("cuda:%d" % args.cuda if torch.cuda.is_available() else "cpu")
     checkpoint_path = '%s%s/' % (args.checkpoint_path, args.arch)
+    output_path = '%s%s.txt' % (checkpoint_path, args.arch)
 
     model = Seq2Seq(vocab_size, embedding_size, hidden_size, device).to(device)
 
     trainer = Trainer(device, model, word2index, index2word, batch_size, lr, ckpt_path=checkpoint_path,
-                      output_path=args.output_path)
+                      output_path=output_path)
     if args.load_models:
         trainer.load_models()
 
@@ -51,7 +51,7 @@ def main(args):
         print('Epoch: {}'.format(epoch))
         trainer.run_epoch(epoch, train_dataset, True)
         trainer.run_epoch(epoch, valid_dataset, False)
-        # trainer.save_models(epoch)
+        trainer.save_models(epoch)
 
     ipdb.set_trace()
 

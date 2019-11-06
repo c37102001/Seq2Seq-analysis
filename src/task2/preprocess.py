@@ -5,6 +5,7 @@ import random
 from dataset import PairDataset
 from sklearn.model_selection import train_test_split
 from ipdb import set_trace as pdb
+from collections import Counter
 
 
 def parse_args():
@@ -20,7 +21,9 @@ def main(args):
     # make dictionary
     sentences = open(args.raw_data_path, encoding='utf-8').read().strip().split('\n')
     del sentences[10148]    # error data
-    max_len = max([len(s) for s in sentences])
+    max_len = min(max([len(s) for s in sentences]), 20)     # max_len=20
+    for i in range(len(sentences)):
+        sentences[i] = sentences[i][:max_len]
 
     word2index = {'<PAD>': 0, '<SOS>': 1, '<EOS>': 2, '<UNK>': 3}
     index2word = {0: '<PAD>', 1: '<SOS>', 2: '<EOS>', 3: '<UNK>'}
