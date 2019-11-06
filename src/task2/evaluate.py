@@ -3,7 +3,7 @@ import argparse
 parser = argparse.ArgumentParser()
 # parser.add_argument('--training_file', type=str, required=True)
 # parser.add_argument('--result_file', type=str, required=True)
-parser.add_argument('--training_file', type=str, default='../../data/task2/hw2.1-2_sample_testing_data.txt')
+parser.add_argument('--training_file', type=str, default='../../data/task2/hw2.1-2_testing_data.txt')
 parser.add_argument('--result_file', type=str, default='hw2-2-2_b32e512h128_output.txt')
 args = parser.parse_args()
 

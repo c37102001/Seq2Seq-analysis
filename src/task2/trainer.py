@@ -61,10 +61,6 @@ class Trainer:
                 self.opt.zero_grad()
                 loss.backward()
                 self.opt.step()
-            else:
-                with open('%s_%d' % (self.output_path, epoch), 'a+') as f:
-                    for predict_sent in predict:
-                        f.write(self.indices2sentence(predict_sent) + '\n')
 
             loss = loss.item() / target_tensor.size(0)
             total_loss += loss
@@ -78,11 +74,6 @@ class Trainer:
             self.history['train'].append({'ctrl_acc': self.accuracy.value(), 'loss': total_loss / len(dataloader)})
         else:
             self.history['valid'].append({'ctrl_acc': self.accuracy.value(), 'loss': total_loss / len(dataloader)})
-        with open(self.output_path, 'a') as f:
-            f.write(
-                'epoch:%d, accuracy:%.3f' % (epoch, self.accuracy.value()) +
-                '\n=====================================================================\n'
-            )
 
         self.scheduler.step()
 

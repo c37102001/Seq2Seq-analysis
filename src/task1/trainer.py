@@ -41,7 +41,6 @@ class Trainer:
             batch_size=self.batch_size,
             collate_fn=dataset.collate_fn,
             shuffle=training,
-            # num_workers=4
         )
 
         description = 'Train' if training else 'Valid'
@@ -103,10 +102,10 @@ class Trainer:
         with open(self.ckpt_path + 'history.json', 'w') as f:
             json.dump(self.history, f, indent=4)
 
-    def load_models(self):
+    def load_models(self, epoch):
         print('[*] Loading model state')
 
-        ckpt = torch.load(self.ckpt_path + 'models.ckpt')
+        ckpt = torch.load(self.ckpt_path + 'models_epoch%d.ckpt' % epoch)
         self.model.load_state_dict(ckpt['model'])
         self.model.to(self.device)
         self.opt.load_state_dict(ckpt['optim'])

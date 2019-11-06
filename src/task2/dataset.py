@@ -47,7 +47,6 @@ class PairDataset(Dataset):
                 batch_index.append(index + [self.pad_index] * (self.max_len - len(index)))
             return torch.LongTensor(batch_index), torch.LongTensor(batch_index)
 
-
     def get_n_ctrl_idx(self, ncontrols, sent_len):
         sample_num = min(random.randint(1, ncontrols), sent_len)
         samples = random.sample([i for i in range(1, sent_len + 1)], sample_num)
