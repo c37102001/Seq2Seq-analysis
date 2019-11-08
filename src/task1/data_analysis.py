@@ -25,9 +25,9 @@ def main(args):
 
     # print(sum([1 for word, time in word_counter.most_common() if time > 10])))
     reduce_vocab_num = []
-    unk_sent_ratio = [0]
+    unk_sent_total = [0]
     total_sent_num = 382785
-    for i in range(1, 30):
+    for i in range(1, 15):
         print(i)
         reduce_vocab_num.append(sum([1 for word, time in word_counter.most_common() if time <= i]))
 
@@ -42,10 +42,8 @@ def main(args):
                 if word not in word2index:
                     unk_sent_count += 1
                     continue
-        unk_sent_ratio.append(
-            unk_sent_count*100/total_sent_num - unk_sent_ratio[i-1]
-        )
-    ratio = [i/j for i, j in zip(reduce_vocab_num, unk_sent_ratio[1:])]
+        unk_sent_total.append(unk_sent_count)
+    # ratio = [i/j for i, j in zip(reduce_vocab_num, unk_sent_ratio[1:])]
     pdb()
 
 

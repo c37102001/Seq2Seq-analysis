@@ -1,24 +1,29 @@
 import argparse
-import pickle
 import os
-import ipdb
 import torch
 from model import Seq2Seq
 from dataset import PairDataset
-from trainer import Trainer
 from utils import load_pkl
 from torch.utils.data import DataLoader
 torch.manual_seed(42)
 from tqdm import tqdm
+from ipdb import set_trace as pdb
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--arch', type=str, required=True)
-    parser.add_argument('--n_ctrl', type=int, required=True)
-    parser.add_argument('--ckpt_epoch', type=int, required=True)
+    parser.add_argument('--arch', type=str, default='2-2-1_b32e512h128_lr0.5p5')
+    parser.add_argument('--n_ctrl', type=int, default=1)
+    parser.add_argument('--predict_data_path', type=str, default='../../data/task2/hw2.1-1_testing_data.txt')
+    parser.add_argument('--output_path', type=str, default='../../result/task2-1.txt')
+
+    # parser.add_argument('--arch', type=str, default='2-2-2_b32e512h128_lr0.5p5')
+    # parser.add_argument('--n_ctrl', type=int, default=2)
+    # parser.add_argument('--predict_data_path', type=str, default='../../data/task2/hw2.1-2_testing_data.txt')
+    # parser.add_argument('--output_path', type=str, default='../../result/task2-2.txt')
+
+    parser.add_argument('--ckpt_epoch', type=int, default=20)
     parser.add_argument('--dataset_path', type=str, default='../../dataset/task2/')
-    parser.add_argument('--predict_data_path', type=str, default='../../data/task2/hw2.1-2_testing_data.txt')
     parser.add_argument('--batch_size', type=int, default=1024)
     parser.add_argument('--embedding_size', type=int, default=512)
     parser.add_argument('--hidden_size', type=int, default=128)
@@ -34,13 +39,14 @@ def main(args):
     n_ctrl = args.n_ctrl
     word2index = load_pkl(os.path.join(args.dataset_path, 'word2index.pkl'))
     index2word = load_pkl(os.path.join(args.dataset_path, 'index2word.pkl'))
+    EOS_IDX = word2index['<EOS>']
     data = open(args.predict_data_path, encoding='utf-8').read().strip().split('\n')
     max_len = max([len(sent) for sent in data])
     test_data = [[word2index.get(word, word2index['<UNK>']) for word in sent.split(' ')] for sent in data]
     test_dataset = PairDataset(test_data, None, word2index, n_ctrl, max_len, testing=True)
 
     print('[*] Loading model...')
-    vocab_size = len(word2index) - 1
+    vocab_size = len(word2index)
     embedding_size = args.embedding_size
     hidden_size = args.hidden_size
     device = torch.device("cuda:%d" % args.cuda if torch.cuda.is_available() else "cpu")
@@ -67,9 +73,13 @@ def main(args):
             predict = model(input_tensor, target_tensor, teacher_forcing_ratio=0)     # (batch, max_len-1, voc)
         predict = predict.argmax(2)  # (b, max_len-1)
 
-        with open('%s_output.txt' % args.arch, 'a+') as f:
+        with open(args.output_path, 'a+') as f:
             for predict_sent in predict:
-                sent = ' '.join(['<SOS>'] + [str(index2word[idx.item()]) for idx in predict_sent])
+                eos_idx = (predict_sent == EOS_IDX).nonzero()[0].item() + 1 if EOS_IDX in predict_sent \
+                    else len(predict_sent)
+                # sent = ' '.join(['<SOS>'] + [str(index2word[idx.item()]) for idx in predict_sent[:eos_idx]])
+                sent = ''.join([str(index2word[idx.item()]) for idx in predict_sent[:eos_idx-1]])
+
                 f.write(sent + '\n')
 
 

@@ -12,15 +12,19 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--arch', type=str, required=True)
-    parser.add_argument('--ckpt_epoch', type=int, required=True)
-    parser.add_argument('--test_data_path', type=str, default='../../data/task1/train.txt')
+    parser.add_argument('--test_data_path', type=str, default='../../data/task1/hw2.0_testing_data.txt')
+
+    parser.add_argument('--arch', type=str, default='24_0_b32e512h128_linearRelu_vocab10')
+    parser.add_argument('--ckpt_epoch', type=int, default=40)
+    parser.add_argument('--output_path', type=str, default='../../result/task1.txt')
+
     parser.add_argument('--dataset_path', type=str, default='../../dataset/task1/')
     parser.add_argument('--ckpt_path', type=str, default='../../models/task1/')
     parser.add_argument('--batch_size', type=int, default=1024)
     parser.add_argument('--embedding_size', type=int, default=512)
     parser.add_argument('--hidden_size', type=int, default=128)
     parser.add_argument('--cuda', type=int, default=0)
+
     args = parser.parse_args()
     return args
 
@@ -69,7 +73,7 @@ def main(args):
             predict = model(input_tensor, target_tensor, teacher_forcing_ratio=0)   # (batch, max_len-1, voc)
         predict = predict.argmax(2)   # (batch, max_len-1)
 
-        with open('%s_output.txt' % args.arch, 'a+') as f:
+        with open(args.output_path, 'a+') as f:
             for predict_sent in predict:
                 eos_idx = (predict_sent == EOS_IDX).nonzero()[0].item() + 1 if EOS_IDX in predict_sent \
                     else len(predict_sent)

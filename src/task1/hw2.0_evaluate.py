@@ -5,8 +5,8 @@ import argparse
 parser = argparse.ArgumentParser()
 # parser.add_argument('--predict_file', type=str, required=True)
 # parser.add_argument('--true_file', type=str, required=True)
-parser.add_argument('--predict_file', type=str, default='../../data/task1/train.txt')
-parser.add_argument('--true_file', type=str, default='24_0_b32e512h128_linearRelu_vocab10_output.txt')
+parser.add_argument('--predict_file', type=str, default='../../data/task1/hw2.0_testing_data.txt')
+parser.add_argument('--true_file', type=str, default='../../result/task1.txt')
 args = parser.parse_args()
 
 
